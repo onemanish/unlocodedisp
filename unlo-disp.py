@@ -21,12 +21,12 @@ def get_unlocodes():
 st.set_page_config(layout='wide', page_title='UN/LOCODES')
 st.sidebar.title('UN/LOCODE locator')
 # vName = st.sidebar.text_input('Enter Vessel Name', value='I am here!')
-vLat = st.sidebar.number_input('Latitude (use - value for S)', min_value=-90, max_value=90)
-vLong = st.sidebar.number_input('Longitude (use - value for W)', min_value=-180, max_value=180)
-diff = st.sidebar.number_input('Show surrounding area (º)', value=2)
-vCircle = st.sidebar.number_input('Circle Around Me (NM)', value=20)
+vLat = st.sidebar.number_input('Latitude (use -ve value for S)', min_value=-90, max_value=90)
+vLong = st.sidebar.number_input('Longitude (use -ve value for W)', min_value=-180, max_value=180)
+diff = st.sidebar.number_input('Show UN/LO Codes around (º)', value=2)
+vCircle = st.sidebar.number_input('Draw Circle Around Me (NM)', value=20)
 mapZoom = st.sidebar.number_input('Map zoom', value=9)
-st.warning('UN/LOCode Viewer')
+st.subheader('UN/LOCode Viewer  -- click on marker to select')
 
 df1 = get_unlocodes()
 filtered_df = df1[(df1['lat'] >= vLat - diff) & (df1['lat'] <= vLat + diff)] # remove all points diffº far from my location
@@ -54,7 +54,7 @@ for i in range(0,len(filtered_df)):
     dist = haversine((vLat,vLong), (filtered_df.iloc[i]['lat'], filtered_df.iloc[i]['long']), unit=Unit.NAUTICAL_MILES)
     folium.Marker(
       location=[filtered_df.iloc[i]['lat'], filtered_df.iloc[i]['long']],
-      tooltip=f"{filtered_df.iloc[i]['Name']}-{filtered_df.iloc[i]['Country']}{filtered_df.iloc[i]['Location']}-{dist:.1f} NM from me",
+      tooltip=f"{filtered_df.iloc[i]['Name']}-{filtered_df.iloc[i]['Country']}{filtered_df.iloc[i]['Location']}-{dist:.1f}NM away",
    ).add_to(m)
 
 st_data = st_folium(m, use_container_width=True)
