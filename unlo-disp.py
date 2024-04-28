@@ -27,8 +27,8 @@ def get_unlocodes(): # split the coords col to lat long and convert to decimal
 
 st.set_page_config(layout='wide', page_title='UN/LOCODES')
 st.sidebar.title('UN/LOCODE locator')
-vLat = st.sidebar.number_input('Latitude (use -ve value for S)', min_value=-90, max_value=90, value=8)
-vLong = st.sidebar.number_input('Longitude (use -ve value for W)', min_value=-180, max_value=180, value=77)
+vLat = st.sidebar.number_input('Latitude (use -ve value for S)', min_value=-90.0, max_value=90.0, value=19.0)
+vLong = st.sidebar.number_input('Longitude (use -ve value for W)', min_value=-180.0, max_value=180.0, value=72.5)
 diff = st.sidebar.number_input('Show UN/LO Codes around (º)', value=2)
 vCircle = st.sidebar.number_input('Draw Circle Around Me (NM)', value=20)
 mapZoom = st.sidebar.number_input('Map zoom', value=9)
