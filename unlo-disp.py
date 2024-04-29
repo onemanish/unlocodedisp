@@ -47,6 +47,7 @@ def get_dist(row):
 sel_df['dist'] = sel_df.apply(get_dist, axis=1)
 sel_df = sel_df.sort_values(by='dist')
 sel_df.reset_index(drop=True, inplace=True) # to be able to address each point sequentially
+st.error(f'Nearest UN/LO Code locations [{len(sel_df)}] within {diff}º from own position.')
 st.dataframe(sel_df)
 
  # set up map and add markers
