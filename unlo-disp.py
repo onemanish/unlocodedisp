@@ -11,6 +11,7 @@ from streamlit_folium import st_folium
 @st.cache_data
 def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
     df = pd.read_excel('UNLOCODECodeList.xlsx') # read the date file with UNLO Codes
+    dfDNV = pd.read_excel('DNVUNLOCODES.xlsx')
     print('read the master data')
     
     def deg2dec(degVal):
@@ -24,6 +25,7 @@ def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
         return decDeg
     
     df['UNLOCode'] = df['Country'] + df['Location']
+    df['InDNValso'] = df['UNLOCode'].isin(dfDNV['Port Code']).map({True:'Y', False:' '}) # Check whether the codes exists in DNV db or not
     df.dropna(subset=['Coordinates'], inplace=True) # throw out rows without Lat/Long info
     df.drop(columns=['Country', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'NameWoDiacritics'], inplace=True)
     df['Lat'] = df['Coordinates'].str.split().str[0].apply(deg2dec)
