@@ -25,13 +25,14 @@ def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
         return decDeg
     
     df['UNLOCode'] = df['Country'] + df['Location']
-    df['InDNValso'] = df['UNLOCode'].isin(dfDNV['Port Code']).map({True:'Y', False:' '}) # Check whether the codes exists in DNV db or not
     df.dropna(subset=['Coordinates'], inplace=True) # throw out rows without Lat/Long info
-    df.drop(columns=['Country', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'NameWoDiacritics'], inplace=True)
+    df.drop(columns=['Country', 'Date', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'NameWoDiacritics'], inplace=True)
+    df['InDNV'] = df['UNLOCode'].isin(dfDNV['Port Code']).map({True:'Y', False:' '}) # Check whether the codes exists in DNV db or not
     df['Lat'] = df['Coordinates'].str.split().str[0].apply(deg2dec)
     df['Long'] = df['Coordinates'].str.split().str[1].apply(deg2dec)
     return df
 
+# print('------------------------ start ------------------------')
 # Set page parameters
 st.set_page_config(layout='wide', page_title='UN/LOCODES')
 st.sidebar.subheader('Own location')
@@ -50,12 +51,15 @@ sel_df = sel_df[(sel_df['Long'] >= vLong - diff) & (sel_df['Long'] <= vLong + di
 
 def get_dist(row):
     return haversine((row['Lat'], row['Long']), (vLat, vLong), unit=Unit.NAUTICAL_MILES)
-
-sel_df['Distance'] = sel_df.apply(get_dist, axis=1)
+    
+sel_df['Distance'] = sel_df.apply(get_dist, axis=1) # Add column for distances 
 sel_df = sel_df.sort_values(by='Distance')
 sel_df.reset_index(drop=True, inplace=True) # to be able to address each point sequentially
 st.error(f'{len(sel_df)} UN/LO Code locations found within {diff}º from my position ({vLat}º, {vLong}º).')
-st.dataframe(sel_df)
+# st.write(sel_df)
+styled_df = sel_df.style.apply(lambda x: ["background-color: darkred" if val == "Y" else "" for val in x], axis=1)
+styled_df = styled_df.format("{:.2f}", subset=pd.IndexSlice[:, ["Lat", 'Long','Distance']])
+st.dataframe(styled_df)
 
  # set up map and add markers
 m = folium.Map(location=[vLat, vLong], tiles="OpenStreetMap", zoom_start=mapZoom)
@@ -67,6 +71,7 @@ for i in range(0,len(sel_df)):
     Distance = haversine((vLat,vLong), (sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']), unit=Unit.NAUTICAL_MILES)
     folium.Marker(location=[sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']],
       tooltip=f"{sel_df.iloc[i]['Name']} - {sel_df.iloc[i]['UNLOCode']} - {sel_df.iloc[i]['Distance']:0.1f}NM away",
+      icon=folium.Icon(color='red' if sel_df.iloc[i]['InDNV'] == 'Y' else 'darkgreen'),
    ).add_to(m)
 
 st_data = st_folium(m, use_container_width=True)
