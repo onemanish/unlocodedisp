@@ -32,7 +32,7 @@ def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
     df['Long'] = df['Coordinates'].str.split().str[1].apply(deg2dec)
     return df
 
-# print('------------------------ start ------------------------')
+# print('------ start --------')
 # Set page parameters
 st.set_page_config(layout='wide', page_title='UN/LOCODES')
 st.sidebar.subheader('Own location')
