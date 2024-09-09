@@ -10,11 +10,12 @@ from streamlit_folium import st_folium
 
 @st.cache_data
 def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
-    df = pd.read_excel('UNLOCODECodeList.xlsx') # read the date file with UNLO Codes
+    df = pd.read_excel('code-list-improved.xlsx') # read the date file with UNLO Codes
     dfDNV = pd.read_excel('DNVUNLOCODES.xlsx')
-    print('read the master data')
-    
     def deg2dec(degVal):
+        if len(degVal) < 5 or len(degVal) > 6:
+            print(degVal)
+            return None
         direction = degVal[-1]  # Extract the direction ('N' or 'S')
         degVal = degVal[:-1]  # Remove the direction
         degrees = int(degVal[:-2])  # Extract the degrees part
@@ -24,12 +25,19 @@ def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
             decDeg *= -1  # If direction is S or W, make decimal degrees negative
         return decDeg
     
-    df['UNLOCode'] = df['Country'] + df['Location']
+    # Convert 'Country' and 'Location' to strings before concatenation
+    df['UNLOCode'] = df['Country'].astype(str) + df['Location'].astype(str)
     df.dropna(subset=['Coordinates'], inplace=True) # throw out rows without Lat/Long info
-    df.drop(columns=['Country', 'Date', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'NameWoDiacritics'], inplace=True)
     df['InDNV'] = df['UNLOCode'].isin(dfDNV['Port Code']).map({True:'Y', False:' '}) # Check whether the codes exists in DNV db or not
     df['Lat'] = df['Coordinates'].str.split().str[0].apply(deg2dec)
     df['Long'] = df['Coordinates'].str.split().str[1].apply(deg2dec)
+    df.drop(columns=['Country', 'Date', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'Name', 'Coordinates'], inplace=True)
+    df = df.rename(columns={'NameWoDiacritics': 'Name'})
+    # Rearrange columns
+    new_column_order = ['Name', 'UNLOCode', 'Lat', 'Long', 'Function', 'Distance', 'Source', 'InDNV']
+    df = df.reindex(columns=new_column_order)
+    
+    print('Finished reading the master data')
     return df
 
 def get_dist(row):
