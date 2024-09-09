@@ -72,7 +72,7 @@ st.dataframe(styled_df)
 m = folium.Map(location=[vLat, vLong], tiles="OpenStreetMap", zoom_start=mapZoom)
 folium.Marker(location=[vLat, vLong], tooltip=folium.Tooltip('I am here!'), icon=folium.Icon(color='orange')).add_to(m)
 folium.Circle(location=[vLat, vLong], radius=vCircle*1852, color="black", weight=1, \
-    opacity=1, fill_opacity=0.2, fill_color="green", fill=False, tooltip=f"{vCircle}NM").add_to(m)
+    opacity=1, fill_opacity=0.2, fill_color="yellow", fill=False, tooltip=f"{vCircle}NM").add_to(m)
 
 for i in range(0,len(sel_df)):
     Distance = haversine((vLat,vLong), (sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']), unit=Unit.NAUTICAL_MILES)
@@ -87,7 +87,7 @@ selData = st_data['last_object_clicked_tooltip']
 if st_data['last_clicked']:
     st.session_state.vLat = st_data['last_clicked']['lat']
     st.session_state.vLong = st_data['last_clicked']['lng']
-    st.experimental_rerun()
+    st.rerun()
 
 # st.warning(selData)
 if selData != None:
