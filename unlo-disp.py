@@ -62,7 +62,7 @@ sel_df = sel_df[(sel_df['Long'] >= vLong - diff) & (sel_df['Long'] <= vLong + di
 sel_df['Distance'] = sel_df.apply(get_dist, axis=1) # Add column for distances 
 sel_df = sel_df.sort_values(by='Distance')
 sel_df.reset_index(drop=True, inplace=True) # to be able to address each point sequentially
-st.error(f'{len(sel_df)} UN/LO Code locations found within {diff}º from my position ({vLat}º, {vLong}º).') # no error, just color change
+st.error(f'{len(sel_df)} UN/LO Code locations found within {diff}º from my position ({vLat:.2f}º, {vLong:.2f}º).') # no error, just color change
 # st.write(sel_df)
 styled_df = sel_df.style.apply(lambda x: ["background-color: pink" if val == "Y" else "" for val in x], axis=1)
 styled_df = styled_df.format("{:.2f}", subset=pd.IndexSlice[:, ["Lat", 'Long','Distance']])
