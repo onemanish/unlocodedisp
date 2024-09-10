@@ -1,6 +1,6 @@
 import pandas as  pd
 import openpyxl, folium
-from haversine import haversine, Unit, haversine_vector
+from haversine import haversine, Unit
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -34,9 +34,7 @@ def get_unlocodes(): # split the coords col to Lat Long and convert to decimal
     df.drop(columns=['Country', 'Date', 'Location','Change','IATA', 'Remarks', 'Subdivision', 'Status', 'Name', 'Coordinates'], inplace=True)
     df = df.rename(columns={'NameWoDiacritics': 'Name'})
     # Rearrange columns
-    new_column_order = ['Name', 'UNLOCode', 'Lat', 'Long', 'Function', 'Distance', 'Source', 'InDNV']
-    df = df.reindex(columns=new_column_order)
-    
+    df = df.reindex(columns=['Name', 'UNLOCode', 'Lat', 'Long', 'Function', 'Distance', 'Source', 'InDNV'])
     print('Finished reading the master data')
     return df
 
@@ -48,46 +46,80 @@ if 'vLat' not in st.session_state:
     st.session_state.vLat = 19.0
 if 'vLong' not in st.session_state:
     st.session_state.vLong = 72.5
-
-# Update the sidebar inputs to use session state
-# print('------ start --------')
-# Set page parameters
 st.set_page_config(layout='wide', page_title='UN/LOCODES')
 st.sidebar.subheader('Click on map to set own location')
+
+if 'search_term' not in st.session_state:
+    st.session_state.search_term = ''
+
+st.subheader('UN/LOCode Viewer')
+col1, col2, col3 = st.columns([3, 1, 4])
+search_term = col1.text_input("Clear the search term to display nearby positions & codes", value=st.session_state.search_term)
+# col2.write('Clear the search term to display nearby positions & codes')
+if col2.button('Clear search'):
+    search_term = ''
+    st.session_state.search_term = ''
+    st.rerun()
+
 vLat = st.sidebar.number_input('My Latitude (use -ve decimal for S)', min_value=-90.0, max_value=90.0, value=st.session_state.vLat)
 vLong = st.sidebar.number_input('My Longitude (use -ve decimal for W)', min_value=-180.0, max_value=180.0, value=st.session_state.vLong)
 vCircle = st.sidebar.number_input('Draw Circle Around Me (NM)', value=20)
-st.sidebar.divider()
 diff = st.sidebar.number_input('Show UN/LO Codes around (º)', value=1.0)
 mapZoom = st.sidebar.number_input('Map zoom', value=9)
-st.sidebar.write('---')
-st.subheader('UN/LOCode Viewer')
 
 df1 = get_unlocodes()
-sel_df = df1[(df1['Lat'] >= vLat - diff) & (df1['Lat'] <= vLat + diff)] # remove all points diff deg far from my location
-sel_df = sel_df[(sel_df['Long'] >= vLong - diff) & (sel_df['Long'] <= vLong + diff)] # remove all points diff º far from my location
+
+if search_term:
+    st.session_state.search_term = search_term  # Store search term in session state
+    search_term = search_term.lower()
+    sel_df = df1[
+        df1['Name'].str.lower().str.contains(search_term) |
+        df1['UNLOCode'].str.lower().str.contains(search_term)
+    ]
+    if not sel_df.empty:
+        # Set vLat and vLong to the first matching port
+        vLat = sel_df.iloc[0]['Lat']
+        vLong = sel_df.iloc[0]['Long']
+        st.session_state.vLat = vLat
+        st.session_state.vLong = vLong
+else:
+    # If no search term, use the original filtering
+    sel_df = df1[(df1['Lat'] >= vLat - diff) & (df1['Lat'] <= vLat + diff)] # remove all points diff deg far from my location
+    sel_df = sel_df[(sel_df['Long'] >= vLong - diff) & (sel_df['Long'] <= vLong + diff)] # remove all points diff º far from my location
 
 sel_df['Distance'] = sel_df.apply(get_dist, axis=1) # Add column for distances 
 sel_df = sel_df.sort_values(by='Distance')
 sel_df.reset_index(drop=True, inplace=True) # to be able to address each point sequentially
-st.error(f'{len(sel_df)} UN/LO Code locations found within {diff}º from my position ({vLat:.2f}º, {vLong:.2f}º).') # no error, just color change
+col3.error(f'{len(sel_df)} UN/LO Code locations within {diff}º from ({vLat:.2f}º, {vLong:.2f}º).') # no error, just color change
 # st.write(sel_df)
 styled_df = sel_df.style.apply(lambda x: ["background-color: pink" if val == "Y" else "" for val in x], axis=1)
 styled_df = styled_df.format("{:.2f}", subset=pd.IndexSlice[:, ["Lat", 'Long','Distance']])
-st.dataframe(styled_df)
+st.dataframe(styled_df, use_container_width=True)
 
  # set up map and add markers
 m = folium.Map(location=[vLat, vLong], tiles="OpenStreetMap", zoom_start=mapZoom)
-folium.Marker(location=[vLat, vLong], tooltip=folium.Tooltip('I am here!'), icon=folium.Icon(color='orange')).add_to(m)
+folium.Marker(location=[vLat, vLong], tooltip=folium.Tooltip('<div style="font-size: 14px;">I am here!</div>'), icon=folium.Icon(color='orange')).add_to(m)
 folium.Circle(location=[vLat, vLong], radius=vCircle*1852, color="black", weight=1, \
-    opacity=1, fill_opacity=0.2, fill_color="yellow", fill=False, tooltip=f"{vCircle}NM").add_to(m)
+    opacity=1, fill_opacity=0.2, fill_color="yellow", fill=False, tooltip=f'<div style="font-size: 14px;">{vCircle} NM</div>').add_to(m)
 
-for i in range(0,len(sel_df)):
+for i in range(0, len(sel_df)):
     Distance = haversine((vLat,vLong), (sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']), unit=Unit.NAUTICAL_MILES)
-    folium.Marker(location=[sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']],
-      tooltip=f"{sel_df.iloc[i]['Name']} - {sel_df.iloc[i]['UNLOCode']} - {sel_df.iloc[i]['Distance']:0.1f}NM away",
-      icon=folium.Icon(color='red' if sel_df.iloc[i]['InDNV'] == 'Y' else 'darkgreen'),
-   ).add_to(m)
+    color = 'blue' if search_term else ('red' if sel_df.iloc[i]['InDNV'] == 'Y' else 'darkgreen')
+    
+    # Create custom HTML for the tooltip with larger font size
+    tooltip_html = f"""
+    <div style="font-size: 14px;">
+        {sel_df.iloc[i]['Name']} - {sel_df.iloc[i]['UNLOCode']}<br>
+        {sel_df.iloc[i]['Distance']:0.1f} NM away
+    </div>
+    """
+    tooltip = folium.Tooltip(tooltip_html)
+    
+    folium.Marker(
+        location=[sel_df.iloc[i]['Lat'], sel_df.iloc[i]['Long']],
+        tooltip=tooltip,
+        icon=folium.Icon(color=color),
+    ).add_to(m)
 
 st_data = st_folium(m, use_container_width=True)
 selData = st_data['last_object_clicked_tooltip']
