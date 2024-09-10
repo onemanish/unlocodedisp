@@ -1,6 +1,6 @@
 import pandas as  pd
 import openpyxl, folium
-from haversine import haversine, Unit, haversine_vector
+from haversine import haversine, Unit
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -53,9 +53,9 @@ if 'search_term' not in st.session_state:
     st.session_state.search_term = ''
 
 st.subheader('UN/LOCode Viewer')
-col1, col2 = st.columns([1, 1])
-search_term = col1.text_input("Search Port Name or UNLO Code", value=st.session_state.search_term)
-col2.write('Clear the search term to display nearby positions & codes')
+col1, col2, col3 = st.columns([3, 1, 4])
+search_term = col1.text_input("Clear the search term to display nearby positions & codes", value=st.session_state.search_term)
+# col2.write('Clear the search term to display nearby positions & codes')
 if col2.button('Clear search'):
     search_term = ''
     st.session_state.search_term = ''
@@ -90,7 +90,7 @@ else:
 sel_df['Distance'] = sel_df.apply(get_dist, axis=1) # Add column for distances 
 sel_df = sel_df.sort_values(by='Distance')
 sel_df.reset_index(drop=True, inplace=True) # to be able to address each point sequentially
-col1.error(f'{len(sel_df)} UN/LO Code locations within {diff}º from ({vLat:.2f}º, {vLong:.2f}º).') # no error, just color change
+col3.error(f'{len(sel_df)} UN/LO Code locations within {diff}º from ({vLat:.2f}º, {vLong:.2f}º).') # no error, just color change
 # st.write(sel_df)
 styled_df = sel_df.style.apply(lambda x: ["background-color: pink" if val == "Y" else "" for val in x], axis=1)
 styled_df = styled_df.format("{:.2f}", subset=pd.IndexSlice[:, ["Lat", 'Long','Distance']])
